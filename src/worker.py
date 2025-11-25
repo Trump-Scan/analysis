@@ -4,8 +4,7 @@
 메시지 처리 루프를 담당합니다.
 """
 
-import time
-
+from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import get_logger
 
 logger = get_logger("worker")
@@ -18,7 +17,8 @@ class Worker:
     메시지 수신 → LLM 분석 → DB 저장 → 메시지 발행 흐름을 처리합니다.
     """
 
-    def __init__(self):
+    def __init__(self, message_subscriber: MessageSubscriber):
+        self._message_subscriber = message_subscriber
         self._shutdown = False
         logger.info("Worker 초기화 완료")
 
@@ -31,15 +31,26 @@ class Worker:
         logger.info("Worker 시작")
 
         while not self._shutdown:
-            logger.debug("loop")
-            # TODO: MessageSubscriber.receive() 호출
+            # 메시지 수신 (blocking)
+            raw_data = self._message_subscriber.receive()
+
+            if raw_data is None:
+                # 타임아웃 - 다음 루프로
+                continue
+
+            logger.info(
+                "메시지 처리 시작",
+                message_id=raw_data.message_id,
+                source=raw_data.channel,
+            )
+
             # TODO: LLMService.analyze() 호출
             # TODO: Database.save() 호출
             # TODO: MessagePublisher.publish() 호출
-            # TODO: MessageSubscriber.ack() 호출
 
-            # 임시: 1초 대기 (실제 구현 시 blocking receive로 대체)
-            time.sleep(1)
+            # 처리 완료 ACK
+            self._message_subscriber.ack(raw_data.message_id)
+            logger.info("메시지 처리 완료", message_id=raw_data.message_id)
 
         logger.info("Worker 종료")
 

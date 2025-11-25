@@ -7,6 +7,7 @@
 import signal
 import sys
 
+from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import setup_logging, get_logger
 from src.worker import Worker
 
@@ -19,8 +20,11 @@ def main():
     """애플리케이션 진입점"""
     logger.info("분석 레이어 시작")
 
+    # 인프라 컴포넌트 생성
+    message_subscriber = MessageSubscriber()
+
     # Worker 생성
-    worker = Worker()
+    worker = Worker(message_subscriber=message_subscriber)
 
     def signal_handler(signum, frame):
         """시그널 핸들러: SIGINT/SIGTERM 처리"""
@@ -33,7 +37,10 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     # Worker 실행
-    worker.run()
+    try:
+        worker.run()
+    finally:
+        message_subscriber.close()
 
     logger.info("분석 레이어 종료 완료")
     sys.exit(0)
