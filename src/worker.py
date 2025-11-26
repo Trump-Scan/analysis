@@ -6,6 +6,7 @@
 
 from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import get_logger
+from src.services.llm_service import LLMService
 
 logger = get_logger("worker")
 
@@ -17,8 +18,13 @@ class Worker:
     메시지 수신 → LLM 분석 → DB 저장 → 메시지 발행 흐름을 처리합니다.
     """
 
-    def __init__(self, message_subscriber: MessageSubscriber):
+    def __init__(
+        self,
+        message_subscriber: MessageSubscriber,
+        llm_service: LLMService,
+    ):
         self._message_subscriber = message_subscriber
+        self._llm_service = llm_service
         self._shutdown = False
         logger.info("Worker 초기화 완료")
 
@@ -44,7 +50,9 @@ class Worker:
                 source=raw_data.channel,
             )
 
-            # TODO: LLMService.analyze() 호출
+            # LLM 분석
+            analysis_result = self._llm_service.analyze(raw_data.content)
+
             # TODO: Database.save() 호출
             # TODO: MessagePublisher.publish() 호출
 

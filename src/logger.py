@@ -20,7 +20,8 @@ def setup_logging(level: str = "DEBUG"):
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=getattr(logging, level.upper())
+        level=getattr(logging, level.upper()),
+        force=True,  # 기존 설정 덮어쓰기
     )
 
     # 커스텀 포맷터 정의

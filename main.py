@@ -9,6 +9,7 @@ import sys
 
 from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import setup_logging, get_logger
+from src.services.llm_service import LLMService
 from src.worker import Worker
 
 # 로깅 초기화
@@ -23,8 +24,14 @@ def main():
     # 인프라 컴포넌트 생성
     message_subscriber = MessageSubscriber()
 
+    # 서비스 생성
+    llm_service = LLMService()
+
     # Worker 생성
-    worker = Worker(message_subscriber=message_subscriber)
+    worker = Worker(
+        message_subscriber=message_subscriber,
+        llm_service=llm_service,
+    )
 
     def signal_handler(signum, frame):
         """시그널 핸들러: SIGINT/SIGTERM 처리"""

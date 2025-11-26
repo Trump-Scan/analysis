@@ -3,3 +3,4 @@ venv/
 
 # 설정 파일 (민감 정보)
 config/redis.py
+config/llm.py
