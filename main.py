@@ -7,6 +7,7 @@
 import signal
 import sys
 
+from src.infrastructure.database import Database
 from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import setup_logging, get_logger
 from src.services.llm_service import LLMService
@@ -23,6 +24,7 @@ def main():
 
     # 인프라 컴포넌트 생성
     message_subscriber = MessageSubscriber()
+    database = Database()
 
     # 서비스 생성
     llm_service = LLMService()
@@ -31,6 +33,7 @@ def main():
     worker = Worker(
         message_subscriber=message_subscriber,
         llm_service=llm_service,
+        database=database,
     )
 
     def signal_handler(signum, frame):
@@ -48,6 +51,7 @@ def main():
         worker.run()
     finally:
         message_subscriber.close()
+        database.close()
 
     logger.info("분석 레이어 종료 완료")
     sys.exit(0)

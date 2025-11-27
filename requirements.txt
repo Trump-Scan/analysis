@@ -11,3 +11,6 @@ redis>=5.0.0
 
 # Gemini API
 google-genai>=1.0.0
+
+# Oracle DB
+oracledb>=2.0.0

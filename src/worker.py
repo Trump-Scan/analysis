@@ -4,6 +4,7 @@
 메시지 처리 루프를 담당합니다.
 """
 
+from src.infrastructure.database import Database
 from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import get_logger
 from src.services.llm_service import LLMService
@@ -22,9 +23,11 @@ class Worker:
         self,
         message_subscriber: MessageSubscriber,
         llm_service: LLMService,
+        database: Database,
     ):
         self._message_subscriber = message_subscriber
         self._llm_service = llm_service
+        self._database = database
         self._shutdown = False
         logger.info("Worker 초기화 완료")
 
@@ -53,7 +56,9 @@ class Worker:
             # LLM 분석
             analysis_result = self._llm_service.analyze(raw_data.content)
 
-            # TODO: Database.save() 호출
+            # DB 저장
+            analysis_data = self._database.save_analysis_data(raw_data.id, analysis_result)
+
             # TODO: MessagePublisher.publish() 호출
 
             # 처리 완료 ACK
