@@ -53,7 +53,6 @@ class Worker:
             logger.info(
                 "메시지 처리 시작",
                 message_id=raw_data.message_id,
-                source=raw_data.channel,
             )
 
             # LLM 분석

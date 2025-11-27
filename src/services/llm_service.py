@@ -52,7 +52,7 @@ class LLMService:
         Returns:
             분석 결과
         """
-        logger.debug("LLM 분석 시작")
+        logger.debug("LLM 분석 시작", content=content)
 
         # API 호출
         response = self._client.models.generate_content(
