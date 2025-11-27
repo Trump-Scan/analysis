@@ -28,6 +28,7 @@ def test_llm_service():
     logger.info("Semantic Summary", summary=result.semantic_summary)
     logger.info("Display Summary", summary=result.display_summary)
     logger.info("Keywords", keywords=result.keywords)
+    logger.info("Prompt Version", prompt_version=result.prompt_version)
 
     # 검증
     assert result.semantic_summary, "semantic_summary가 비어있음"

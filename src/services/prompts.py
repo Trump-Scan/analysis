@@ -2,7 +2,11 @@
 LLM 프롬프트 정의
 """
 
-ANALYSIS_SYSTEM_PROMPT = """
+from types import SimpleNamespace
+
+ANALYSIS_PROMPT = SimpleNamespace(
+    VERSION="1.0.0",
+    INSTRUCTION="""
 You are an analyst summarizing Trump-related content from social media, news, and official announcements.
 
 ## Task
@@ -30,4 +34,5 @@ Return a single JSON object:
   "display_summary": "...",
   "keywords": ["...", "..."]
 }
-"""
+""",
+)

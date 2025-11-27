@@ -24,3 +24,6 @@ class AnalysisResult(BaseModel):
 
     # 키워드 목록
     keywords: List[str] = Field(..., description="핵심 키워드 목록 (5개 이하)")
+
+    # 프롬프트 버전
+    prompt_version: str = Field(..., description="분석에 사용된 프롬프트 버전")

@@ -12,7 +12,7 @@ from google.genai import types
 from config import llm as llm_config
 from src.logger import get_logger
 from src.models.analysis_result import AnalysisResult
-from src.services.prompts import ANALYSIS_SYSTEM_PROMPT
+from src.services.prompts import ANALYSIS_PROMPT
 
 logger = get_logger("llm_service")
 
@@ -59,7 +59,7 @@ class LLMService:
             model=self._model_name,
             contents=content,
             config=types.GenerateContentConfig(
-                system_instruction=ANALYSIS_SYSTEM_PROMPT,
+                system_instruction=ANALYSIS_PROMPT.INSTRUCTION,
                 response_mime_type="application/json",
             ),
         )
@@ -72,6 +72,7 @@ class LLMService:
             semantic_summary=result_dict["semantic_summary"],
             display_summary=result_dict["display_summary"],
             keywords=result_dict["keywords"],
+            prompt_version=ANALYSIS_PROMPT.VERSION,
         )
 
         logger.debug("LLM 분석 완료",
