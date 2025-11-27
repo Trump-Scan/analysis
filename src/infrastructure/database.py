@@ -114,6 +114,51 @@ class Database:
             )
             raise
 
+    def get_latest_analysis_data(self) -> AnalysisData:
+        """
+        가장 최근 analysis_data 1건 조회
+
+        Returns:
+            AnalysisData 또는 None (데이터 없는 경우)
+        """
+        try:
+            cursor = self._connection.cursor()
+
+            cursor.execute(
+                """
+                SELECT id, raw_data_id, semantic_summary, display_summary, keywords, prompt_version
+                FROM analysis_data
+                ORDER BY id DESC
+                FETCH FIRST 1 ROW ONLY
+                """
+            )
+
+            row = cursor.fetchone()
+            cursor.close()
+
+            if row is None:
+                return None
+
+            db_id, raw_data_id, semantic_summary, display_summary, keywords_str, prompt_version = row
+
+            return AnalysisData(
+                id=int(db_id),
+                raw_data_id=int(raw_data_id),
+                semantic_summary=semantic_summary,
+                display_summary=display_summary,
+                keywords=json.loads(keywords_str),
+                prompt_version=prompt_version,
+            )
+
+        except oracledb.Error as e:
+            error_obj, = e.args
+            logger.error(
+                "데이터 조회 실패",
+                error_code=error_obj.code if hasattr(error_obj, "code") else None,
+                error_message=str(error_obj.message) if hasattr(error_obj, "message") else str(e),
+            )
+            raise
+
     def close(self):
         """연결 종료"""
         self._connection.close()
