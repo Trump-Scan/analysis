@@ -13,11 +13,11 @@ main.py
 Worker(message_subscriber, llm_service, database, message_publisher)
   ↓
 Worker.run() (무한 루프)
-  ├─ MessageSubscriber.receive()   ← 메시지 수신 (blocking)
-  ├─ LLMService.analyze(raw_data)  ← LLM 분석
-  ├─ Database.save(analysis_result) ← 결과 저장
-  ├─ MessagePublisher.publish()     ← 다음 레이어로 발행
-  └─ MessageSubscriber.ack()        ← 처리 완료
+  ├─ MessageSubscriber.receive()              ← 메시지 수신 (blocking)
+  ├─ LLMService.analyze(content)              ← LLM 분석
+  ├─ Database.save_analysis_data(id, result)  ← 결과 저장
+  ├─ MessagePublisher.publish(analysis_data)  ← 다음 레이어로 발행
+  └─ MessageSubscriber.ack()                  ← 처리 완료
 ```
 
 ---
@@ -88,11 +88,11 @@ Worker.run() (무한 루프)
 **목적:** Gemini API 호출 및 응답 처리
 
 **작업:**
-- `src/services/prompt_builder.py` 생성
-  - `build(raw_data) -> str`
+- `src/services/prompts.py` 생성
+  - `ANALYSIS_PROMPT.VERSION`: 프롬프트 버전
+  - `ANALYSIS_PROMPT.INSTRUCTION`: 시스템 프롬프트
 - `src/services/llm_service.py` 생성
-  - `analyze(raw_data) -> AnalysisResult`
-  - 재시도 로직 (타임아웃, Rate Limit)
+  - `analyze(content: str) -> AnalysisResult`
 - `src/models/analysis_result.py` 생성 (LLM 응답 구조화에 필요)
 - `config/llm.py` 생성 (API 키, 모델명)
 - Worker에서 LLMService.analyze() 호출
@@ -108,11 +108,13 @@ Worker.run() (무한 루프)
 **목적:** 분석 결과 저장
 
 **작업:**
+- `src/models/analysis_data.py` 생성 (DB 레코드 모델)
 - `src/infrastructure/database.py` 생성
-  - `save_analysis_result(result) -> AnalysisResult`
+  - `save_analysis_data(raw_data_id, result) -> AnalysisData`
+  - `get_latest_analysis_data() -> AnalysisData`
 - `sql/ddl.sql` 생성
 - `config/database.py` 생성
-- Worker에서 Database.save() 호출
+- Worker에서 Database.save_analysis_data() 호출
 
 **확인:**
 - DB 저장 및 ID 할당 확인
@@ -126,7 +128,7 @@ Worker.run() (무한 루프)
 **작업:**
 - `src/infrastructure/message_publisher.py` 생성
   - 스트림: `trump-scan:analysis:analysis-result`
-  - `publish(result)`
+  - `publish(analysis_data) -> str`
 - Worker에서 MessagePublisher.publish() 호출
 - Worker에서 MessageSubscriber.ack() 호출
 

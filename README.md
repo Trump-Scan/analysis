@@ -23,11 +23,11 @@
 [trump-scan:data-collection:raw-data] (Consumer Group: analysis-workers)
   ↓
 Worker
-  ├─ MessageSubscriber.receive()  ← 메시지 수신
-  ├─ LLMService.analyze()         ← LLM 분석
-  ├─ Database.save()              ← 결과 저장
-  ├─ MessagePublisher.publish()   ← 다음 레이어로 발행
-  └─ MessageSubscriber.ack()      ← 처리 완료 확인
+  ├─ MessageSubscriber.receive()       ← 메시지 수신
+  ├─ LLMService.analyze()              ← LLM 분석
+  ├─ Database.save_analysis_data()     ← 결과 저장
+  ├─ MessagePublisher.publish()        ← 다음 레이어로 발행
+  └─ MessageSubscriber.ack()           ← 처리 완료 확인
   ↓
 [trump-scan:analysis:analysis-result]
 ```
@@ -46,7 +46,7 @@ analysis/
 │   ├── services/                # 핵심 서비스
 │   │   ├── __init__.py
 │   │   ├── llm_service.py      # LLM API 호출 및 응답 처리
-│   │   └── prompt_builder.py   # 프롬프트 생성
+│   │   └── prompts.py          # 프롬프트 정의
 │   │
 │   ├── infrastructure/          # 인프라 레이어
 │   │   ├── __init__.py
@@ -57,7 +57,8 @@ analysis/
 │   ├── models/                  # 데이터 모델
 │   │   ├── __init__.py
 │   │   ├── raw_data.py         # 입력 데이터 모델
-│   │   └── analysis_result.py  # 분석 결과 모델
+│   │   ├── analysis_result.py  # LLM 분석 결과 모델
+│   │   └── analysis_data.py    # DB 레코드 모델
 │   │
 │   ├── worker.py               # 메인 워커 (흐름 조율)
 │   └── logger.py               # 구조화된 로깅 설정
@@ -85,12 +86,11 @@ analysis/
 
 #### `services/`
 - **`llm_service.py`**: LLM API 호출 및 응답 처리
-  - Gemini 2.0 Flash API 호출
+  - Gemini 2.0 Flash API 호출 (google-genai 라이브러리)
   - JSON 응답 파싱 및 검증
-  - 재시도 로직 (타임아웃, Rate Limit)
-- **`prompt_builder.py`**: 프롬프트 생성
-  - 시스템 메시지 + 분석 지침 + 출력 형식 구성
-  - 원본 데이터를 프롬프트에 포함
+- **`prompts.py`**: 프롬프트 정의
+  - `ANALYSIS_PROMPT.VERSION`: 프롬프트 버전 관리
+  - `ANALYSIS_PROMPT.INSTRUCTION`: 시스템 프롬프트
 
 #### `infrastructure/`
 - **`message_subscriber.py`**: Redis Streams 구독
@@ -106,11 +106,15 @@ analysis/
 #### `models/`
 - **`raw_data.py`**: 입력 데이터 모델
   - 데이터 수집 레이어에서 전달받는 구조
-- **`analysis_result.py`**: 분석 결과 모델
+- **`analysis_result.py`**: LLM 분석 결과 모델
   - semantic_summary: 중복 제거용 영어 요약
   - display_summary: 사용자용 한국어 요약
   - keywords: 핵심 키워드 목록
-  - model_name: 사용된 LLM 모델명
+  - prompt_version: 분석에 사용된 프롬프트 버전
+- **`analysis_data.py`**: DB 레코드 모델
+  - id: 분석 결과 고유 ID
+  - raw_data_id: 원본 데이터 ID
+  - LLM 분석 결과 필드 포함
 
 #### `worker.py`
 - **책임**: 전체 처리 흐름 조율
@@ -131,13 +135,11 @@ analysis/
 
 | 라이브러리 | 용도 | 버전 |
 |-----------|------|------|
-| **httpx** | Gemini API 호출 | >=0.24.0 |
+| **google-genai** | Gemini API 호출 | >=1.0.0 |
 | **pydantic** | 데이터 검증 및 모델링 | >=2.0.0 |
-| **tenacity** | 재시도 로직 | >=8.0.0 |
 | **redis** | Redis Streams | >=5.0.0 |
 | **oracledb** | Oracle DB 연결 | >=2.0.0 |
 | **structlog** | 구조화된 로깅 | >=23.0.0 |
-| **pytest** | 테스팅 | >=7.0.0 |
 
 ### 인프라 의존성
 
