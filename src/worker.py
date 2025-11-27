@@ -5,6 +5,7 @@
 """
 
 from src.infrastructure.database import Database
+from src.infrastructure.message_publisher import MessagePublisher
 from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import get_logger
 from src.services.llm_service import LLMService
@@ -24,10 +25,12 @@ class Worker:
         message_subscriber: MessageSubscriber,
         llm_service: LLMService,
         database: Database,
+        message_publisher: MessagePublisher,
     ):
         self._message_subscriber = message_subscriber
         self._llm_service = llm_service
         self._database = database
+        self._message_publisher = message_publisher
         self._shutdown = False
         logger.info("Worker 초기화 완료")
 
@@ -59,7 +62,8 @@ class Worker:
             # DB 저장
             analysis_data = self._database.save_analysis_data(raw_data.id, analysis_result)
 
-            # TODO: MessagePublisher.publish() 호출
+            # 메시지 발행
+            self._message_publisher.publish(analysis_data)
 
             # 처리 완료 ACK
             self._message_subscriber.ack(raw_data.message_id)

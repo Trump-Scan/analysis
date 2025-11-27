@@ -25,3 +25,14 @@ class AnalysisData(BaseModel):
     display_summary: str = Field(..., description="사용자용 한국어 요약")
     keywords: List[str] = Field(..., description="핵심 키워드 목록")
     prompt_version: str = Field(..., description="분석에 사용된 프롬프트 버전")
+
+    def to_dict(self) -> dict:
+        """메시지 발행용 딕셔너리 변환"""
+        return {
+            "id": self.id,
+            "raw_data_id": self.raw_data_id,
+            "semantic_summary": self.semantic_summary,
+            "display_summary": self.display_summary,
+            "keywords": self.keywords,
+            "prompt_version": self.prompt_version,
+        }
