@@ -8,6 +8,7 @@ from src.infrastructure.database import Database
 from src.infrastructure.message_publisher import MessagePublisher
 from src.infrastructure.message_subscriber import MessageSubscriber
 from src.logger import get_logger
+from src.models.analysis_message import AnalysisMessage
 from src.services.llm_service import LLMService
 
 logger = get_logger("worker")
@@ -61,8 +62,21 @@ class Worker:
             # DB 저장
             analysis_data = self._database.save_analysis_data(raw_data.id, analysis_result)
 
+            # 메시지 모델 생성 (DB 모델 + 원본 메타정보)
+            analysis_message = AnalysisMessage(
+                id=analysis_data.id,
+                raw_data_id=analysis_data.raw_data_id,
+                semantic_summary=analysis_data.semantic_summary,
+                display_summary=analysis_data.display_summary,
+                keywords=analysis_data.keywords,
+                prompt_version=analysis_data.prompt_version,
+                channel=raw_data.channel,
+                original_link=raw_data.link,
+                published_at=raw_data.published_at,
+            )
+
             # 메시지 발행
-            self._message_publisher.publish(analysis_data)
+            self._message_publisher.publish(analysis_message)
 
             # 처리 완료 ACK
             self._message_subscriber.ack(raw_data.message_id)

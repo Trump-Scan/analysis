@@ -10,7 +10,7 @@ import redis
 
 from config import redis as redis_config
 from src.logger import get_logger
-from src.models.analysis_data import AnalysisData
+from src.models.analysis_message import AnalysisMessage
 
 logger = get_logger("message_publisher")
 
@@ -43,37 +43,37 @@ class MessagePublisher:
             logger.error("MessagePublisher 연결 실패", error=str(e))
             raise
 
-    def publish(self, analysis_data: AnalysisData) -> str:
+    def publish(self, analysis_message: AnalysisMessage) -> str:
         """
         분석 결과 발행
 
         Args:
-            analysis_data: 발행할 분석 데이터
+            analysis_message: 발행할 분석 메시지
 
         Returns:
             발행된 메시지 ID
         """
         try:
-            message_json = json.dumps(analysis_data.to_dict(), ensure_ascii=False)
+            message_json = json.dumps(analysis_message.to_dict(), ensure_ascii=False)
             message_id = self._client.xadd(self._stream, {"data": message_json})
 
             logger.debug(
                 "메시지 발행 완료",
                 message_id=message_id,
-                analysis_id=analysis_data.id,
+                analysis_id=analysis_message.id,
             )
 
             return message_id
 
         except redis.RedisError as e:
-            logger.error("메시지 발행 실패", error=str(e), analysis_id=analysis_data.id)
+            logger.error("메시지 발행 실패", error=str(e), analysis_id=analysis_message.id)
             raise
         except Exception as e:
             logger.error(
                 "메시지 발행 중 예외 발생",
                 error=str(e),
                 error_type=type(e).__name__,
-                analysis_id=analysis_data.id,
+                analysis_id=analysis_message.id,
             )
             raise
 

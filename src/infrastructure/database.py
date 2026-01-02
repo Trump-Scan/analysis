@@ -11,6 +11,7 @@ import oracledb
 from config.database import DB_CONFIG
 from src.logger import get_logger
 from src.models.analysis_data import AnalysisData
+from src.models.analysis_message import AnalysisMessage
 from src.models.analysis_result import AnalysisResult
 
 logger = get_logger("database")
@@ -154,6 +155,62 @@ class Database:
             error_obj, = e.args
             logger.error(
                 "데이터 조회 실패",
+                error_code=error_obj.code if hasattr(error_obj, "code") else None,
+                error_message=str(error_obj.message) if hasattr(error_obj, "message") else str(e),
+            )
+            raise
+
+    def get_latest_analysis_message(self) -> AnalysisMessage:
+        """
+        가장 최근 analysis_data를 raw_data와 조인하여 조회
+
+        Returns:
+            AnalysisMessage 또는 None (데이터 없는 경우)
+        """
+        try:
+            cursor = self._connection.cursor()
+
+            cursor.execute(
+                """
+                SELECT
+                    a.id, a.raw_data_id, a.semantic_summary, a.display_summary,
+                    a.keywords, a.prompt_version,
+                    r.channel, r.link, r.published_at
+                FROM analysis_data a
+                JOIN raw_data r ON a.raw_data_id = r.id
+                ORDER BY a.id DESC
+                FETCH FIRST 1 ROW ONLY
+                """
+            )
+
+            row = cursor.fetchone()
+            cursor.close()
+
+            if row is None:
+                return None
+
+            (
+                db_id, raw_data_id, semantic_summary, display_summary,
+                keywords_str, prompt_version,
+                channel, link, published_at
+            ) = row
+
+            return AnalysisMessage(
+                id=int(db_id),
+                raw_data_id=int(raw_data_id),
+                semantic_summary=semantic_summary,
+                display_summary=display_summary,
+                keywords=json.loads(keywords_str),
+                prompt_version=prompt_version,
+                channel=channel,
+                original_link=link,
+                published_at=published_at,
+            )
+
+        except oracledb.Error as e:
+            error_obj, = e.args
+            logger.error(
+                "AnalysisMessage 조회 실패",
                 error_code=error_obj.code if hasattr(error_obj, "code") else None,
                 error_message=str(error_obj.message) if hasattr(error_obj, "message") else str(e),
             )
