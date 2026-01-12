@@ -21,7 +21,7 @@ class Database:
     """
     Oracle 데이터베이스 서비스
 
-    분석 결과를 저장합니다.
+    Connection Pool을 사용하여 분석 결과를 저장합니다.
     """
 
     def __init__(self):
@@ -32,27 +32,34 @@ class Database:
         wallet_password = DB_CONFIG["wallet_password"]
 
         try:
-            logger.info("Oracle DB 연결 중...", dsn=dsn)
+            logger.info("Oracle DB Connection Pool 생성 중...", dsn=dsn)
 
-            self._connection = oracledb.connect(
+            self._pool = oracledb.create_pool(
                 user=username,
                 password=password,
                 dsn=dsn,
                 config_dir=wallet_location,
                 wallet_location=wallet_location,
                 wallet_password=wallet_password,
+                min=1,
+                max=2,
+                increment=1,
             )
 
-            logger.info("Database 연결 완료", dsn=dsn)
+            logger.info("Database Connection Pool 생성 완료", dsn=dsn)
 
         except oracledb.Error as e:
             error_obj, = e.args
             logger.error(
-                "DB 연결 실패",
+                "DB Connection Pool 생성 실패",
                 error_code=error_obj.code if hasattr(error_obj, "code") else None,
                 error_message=str(error_obj.message) if hasattr(error_obj, "message") else str(e),
             )
             raise
+
+    def _get_connection(self):
+        """Pool에서 connection 획득"""
+        return self._pool.acquire()
 
     def save_analysis_data(self, raw_data_id: int, result: AnalysisResult) -> AnalysisData:
         """
@@ -65,8 +72,9 @@ class Database:
         Returns:
             ID가 할당된 AnalysisData
         """
+        connection = self._get_connection()
         try:
-            cursor = self._connection.cursor()
+            cursor = connection.cursor()
             id_var = cursor.var(oracledb.NUMBER)
 
             cursor.execute(
@@ -89,7 +97,7 @@ class Database:
             )
 
             record_id = int(id_var.getvalue()[0])
-            self._connection.commit()
+            connection.commit()
             cursor.close()
 
             analysis_data = AnalysisData(
@@ -105,7 +113,10 @@ class Database:
             return analysis_data
 
         except oracledb.Error as e:
-            self._connection.rollback()
+            try:
+                connection.rollback()
+            except oracledb.Error:
+                pass  # 연결 끊긴 경우 rollback 무시
             error_obj, = e.args
             logger.error(
                 "분석 데이터 저장 실패",
@@ -114,6 +125,8 @@ class Database:
                 raw_data_id=raw_data_id,
             )
             raise
+        finally:
+            connection.close()  # pool에 반환
 
     def get_latest_analysis_data(self) -> AnalysisData:
         """
@@ -122,8 +135,9 @@ class Database:
         Returns:
             AnalysisData 또는 None (데이터 없는 경우)
         """
+        connection = self._get_connection()
         try:
-            cursor = self._connection.cursor()
+            cursor = connection.cursor()
 
             cursor.execute(
                 """
@@ -159,6 +173,8 @@ class Database:
                 error_message=str(error_obj.message) if hasattr(error_obj, "message") else str(e),
             )
             raise
+        finally:
+            connection.close()
 
     def get_latest_analysis_message(self) -> AnalysisMessage:
         """
@@ -167,8 +183,9 @@ class Database:
         Returns:
             AnalysisMessage 또는 None (데이터 없는 경우)
         """
+        connection = self._get_connection()
         try:
-            cursor = self._connection.cursor()
+            cursor = connection.cursor()
 
             cursor.execute(
                 """
@@ -215,8 +232,10 @@ class Database:
                 error_message=str(error_obj.message) if hasattr(error_obj, "message") else str(e),
             )
             raise
+        finally:
+            connection.close()
 
     def close(self):
-        """연결 종료"""
-        self._connection.close()
-        logger.info("Database 연결 종료")
+        """Connection Pool 종료"""
+        self._pool.close()
+        logger.info("Database Connection Pool 종료")
