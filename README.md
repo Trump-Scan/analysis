@@ -65,12 +65,9 @@ analysis/
 │
 ├── config/                      # 설정 파일
 │   ├── __init__.py
-│   ├── database.py             # DB 설정 (gitignore)
-│   ├── database.example.py     # DB 설정 템플릿
-│   ├── redis.py                # Redis 설정 (gitignore)
-│   ├── redis.example.py        # Redis 설정 템플릿
-│   ├── llm.py                  # LLM API 설정 (gitignore)
-│   └── llm.example.py          # LLM API 설정 템플릿
+│   ├── database.py             # DB 설정 (환경변수 기반)
+│   ├── redis.py                # Redis 설정 (환경변수 기반)
+│   └── llm.py                  # LLM API 설정 (환경변수 기반)
 │
 ├── sql/                         # 데이터베이스 스키마
 │   └── ddl.sql                 # 테이블 생성 SQL
@@ -78,6 +75,9 @@ analysis/
 ├── tests/                       # 테스트
 │   └── __init__.py
 │
+├── Dockerfile                   # Docker 이미지 빌드
+├── docker-compose.yml           # Docker Compose 설정
+├── .dockerignore                # Docker 빌드 제외 파일
 ├── requirements.txt
 └── main.py                     # 진입점
 ```
@@ -169,3 +169,48 @@ analysis/
 | `semantic_summary` | 영어 | 중복 제거용 임베딩 입력 | 1,000자 이하 |
 | `display_summary` | 한국어 | 사용자 피드 표시 | 3-5 문장 |
 | `keywords` | 한국어 | 피드 필터링 및 태그 표시 | 5개 이하 |
+
+---
+
+## 🐳 Docker
+
+### Docker Compose 실행 (권장)
+
+Redis와 분석 레이어를 함께 실행합니다.
+
+```bash
+cd analysis
+
+# .env 파일 생성 (최초 1회)
+cat > .env << 'EOF'
+DB_USERNAME=username
+DB_PASSWORD=password
+DB_DSN=dsn
+DB_WALLET_LOCATION=/path/to/wallet/directory
+DB_WALLET_PASSWORD=wallet_password
+LLM_API_KEY=your-api-key
+LLM_MODEL_NAME=gemini-2.0-flash
+EOF
+
+# 실행
+docker compose up --build
+
+# 백그라운드 실행
+docker compose up --build -d
+
+# 종료
+docker compose down
+```
+
+### 볼륨 마운트
+
+| 호스트 경로 | 컨테이너 경로 | 설명 |
+|-------------|---------------|------|
+| Wallet 디렉토리 | `/opt/oracle/wallet` | Oracle Wallet (필수) |
+
+### 참고사항
+
+- Docker Compose 사용 시 `REDIS_HOST`는 자동으로 `redis`로 설정됨
+- `.env` 파일은 gitignore 대상이므로 민감정보를 안전하게 관리 가능
+- config 파일은 이미지에 포함되며, 모든 설정값은 환경변수로 오버라이드 가능
+- data-collection과 동시 실행 시 Redis 포트 충돌 주의 — 실 운영에서는 `REDIS_HOST` 환경변수로 공유 Redis 지정

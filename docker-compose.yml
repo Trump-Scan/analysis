@@ -1,0 +1,51 @@
+services:
+  analysis:
+    build: .
+    container_name: trump-scan-analysis
+    environment:
+      # Oracle Database
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DSN=${DB_DSN}
+      - DB_WALLET_LOCATION=/opt/oracle/wallet
+      - DB_WALLET_PASSWORD=${DB_WALLET_PASSWORD}
+
+      # Redis
+      - REDIS_HOST=redis
+
+      # LLM
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+    volumes:
+      # Oracle Wallet (read-only)
+      - ${DB_WALLET_LOCATION}:/opt/oracle/wallet:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - analysis-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: trump-scan-analysis-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - analysis-network
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  analysis-network:
+    driver: bridge

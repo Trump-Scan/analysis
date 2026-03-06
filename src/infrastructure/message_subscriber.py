@@ -10,7 +10,7 @@ from typing import Optional
 
 import redis
 
-from config import redis as redis_config
+from config.redis import REDIS_CONFIG
 from src.logger import get_logger
 from src.models.raw_data import RawData
 
@@ -26,15 +26,15 @@ class MessageSubscriber:
 
     def __init__(self):
         self._client = redis.Redis(
-            host=redis_config.HOST,
-            port=redis_config.PORT,
-            db=redis_config.DB,
+            host=REDIS_CONFIG["host"],
+            port=REDIS_CONFIG["port"],
+            db=REDIS_CONFIG["db"],
             decode_responses=True,
         )
-        self._stream = redis_config.INPUT_STREAM
-        self._group = redis_config.CONSUMER_GROUP
-        self._consumer = redis_config.CONSUMER_NAME
-        self._block_timeout = redis_config.BLOCK_TIMEOUT
+        self._stream = REDIS_CONFIG["input_stream"]
+        self._group = REDIS_CONFIG["consumer_group"]
+        self._consumer = REDIS_CONFIG["consumer_name"]
+        self._block_timeout = REDIS_CONFIG["block_timeout"]
 
         self._ensure_consumer_group()
         logger.info(

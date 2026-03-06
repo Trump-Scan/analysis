@@ -8,7 +8,7 @@ import json
 
 import redis
 
-from config import redis as redis_config
+from config.redis import REDIS_CONFIG
 from src.logger import get_logger
 from src.models.analysis_message import AnalysisMessage
 
@@ -23,9 +23,9 @@ class MessagePublisher:
     """
 
     def __init__(self):
-        host = redis_config.HOST
-        port = redis_config.PORT
-        db = redis_config.DB
+        host = REDIS_CONFIG["host"]
+        port = REDIS_CONFIG["port"]
+        db = REDIS_CONFIG["db"]
 
         self._client = redis.Redis(
             host=host,
@@ -33,7 +33,7 @@ class MessagePublisher:
             db=db,
             decode_responses=True,
         )
-        self._stream = redis_config.OUTPUT_STREAM
+        self._stream = REDIS_CONFIG["output_stream"]
 
         # 연결 테스트
         try:

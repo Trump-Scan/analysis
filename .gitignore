@@ -1,7 +1,7 @@
 .idea/
 venv/
 
-# 설정 파일 (민감 정보)
-config/redis.py
-config/llm.py
-config/database.py
+# Environment variables
+.env
+
+# Configuration files (환경변수 기반으로 민감정보 미포함)

@@ -9,7 +9,7 @@ import json
 from google import genai
 from google.genai import types
 
-from config import llm as llm_config
+from config.llm import LLM_CONFIG
 from src.logger import get_logger
 from src.models.analysis_result import AnalysisResult
 from src.services.prompts import ANALYSIS_PROMPT
@@ -25,8 +25,8 @@ class LLMService:
     """
 
     def __init__(self):
-        self._model_name = llm_config.MODEL_NAME
-        self._client = genai.Client(api_key=llm_config.API_KEY)
+        self._model_name = LLM_CONFIG["model_name"]
+        self._client = genai.Client(api_key=LLM_CONFIG["api_key"])
 
         # API 키 유효성 확인
         self._verify_connection()

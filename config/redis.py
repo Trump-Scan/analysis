@@ -1,19 +1,19 @@
 """
 Redis 설정
 
-Redis Streams 연결에 필요한 설정값입니다.
+환경변수 기반으로 연결 설정을 주입합니다.
 """
 
-# Redis 연결 설정
-HOST = "localhost"
-PORT = 6379
-DB = 0
+import os
 
-# 스트림 설정
-INPUT_STREAM = "trump-scan:data-collection:raw-data"
-OUTPUT_STREAM = "trump-scan:analysis:analysis-result"
-CONSUMER_GROUP = "analysis-workers"
-CONSUMER_NAME = "worker-1"
-
-# 타임아웃 설정 (밀리초)
-BLOCK_TIMEOUT = 5000  # 5초
+# Redis 설정
+REDIS_CONFIG = {
+    "host": os.environ.get("REDIS_HOST", "localhost"),
+    "port": int(os.environ.get("REDIS_PORT", "6379")),
+    "db": int(os.environ.get("REDIS_DB", "0")),
+    "input_stream": "trump-scan:data-collection:raw-data",
+    "output_stream": "trump-scan:analysis:analysis-result",
+    "consumer_group": "analysis-workers",
+    "consumer_name": os.environ.get("CONSUMER_NAME", "worker-1"),
+    "block_timeout": 5000,
+}
